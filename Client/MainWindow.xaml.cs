@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -44,7 +45,8 @@ namespace Client
                                                                                                         // создаем сокет подключения
             Socket clientSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp); // адресация IPv4         
             byte[] buffer = new byte[1024];
-            StringBuilder sb = new StringBuilder();
+            //StringBuilder sb = new();
+            MemoryStream ms = new();
 
             try                                                                                         // Двусторонний сокет (и читать, и писать)
             {                                                                                           // Протокол сокета - ТСР
@@ -53,12 +55,17 @@ namespace Client
 
                 do
                 {
+                    //int n = clientSocket.Receive(buffer);
+                    //sb.Append(System.Text.Encoding.UTF8.GetString(buffer, 0, n));
                     int n = clientSocket.Receive(buffer);
-                    sb.Append(System.Text.Encoding.UTF8.GetString(buffer, 0, n));
+                    ms.Write(buffer, 0, n);
                 } while (clientSocket.Available > 0);
-                String str = sb.ToString();
-                Dispatcher.Invoke(() =>
-                chatLogs.Text += str + "\n");
+                //String str = sb.ToString();
+                //Dispatcher.Invoke(() =>
+                //chatLogs.Text += str + "\n");
+                String str = Encoding.UTF8.GetString(ms.ToArray());
+
+                chatLogs.Text += str + "\n";
 
                 clientSocket.Shutdown(SocketShutdown.Both);
                 clientSocket.Dispose();
