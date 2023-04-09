@@ -1,10 +1,12 @@
-﻿using System;
+﻿using Client.Classes;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -23,6 +25,8 @@ namespace Client
     /// </summary>
     public partial class MainWindow : Window
     {
+        private byte[] buffer = new byte[1024];
+
         public MainWindow()
         {
             InitializeComponent();
@@ -30,42 +34,84 @@ namespace Client
 
         private void SendButton_Click(object sender, RoutedEventArgs e)
         {
-            IPEndPoint endpoint;  // копия - как у сервера                                              // На окне IP - это текст ("127.0.0.1")
-            try                                                                                         // Для его перевода в число используется
-            {                                                                                           // IPAddress.Parse
-                IPAddress ip = IPAddress.Parse(serverIp.Text);                                          // Аналогично - порт
-                int port = Convert.ToInt32( serverPort.Text);                                           // парсим число из текста
-                endpoint = new(ip, port);                                                               // 
-            }                                                                                           // endpoint - комбинация IP и порта
-            catch                                                                                       // 
+            if (messageTextBox.Text == string.Empty)
+            {
+                MessageBox.Show("\"Message\" field cannot be empty");
+                chatLogs.Text +=$"{DateTime.Now.ToShortTimeString()} Error: \"Message\" field cannot be empty\n";
+
+            }
+            else if (authorTextBox.Text == string.Empty)
+            {
+                MessageBox.Show("\"Nick\" field cannot be empty");
+                chatLogs.Text += $"{DateTime.Now.ToShortTimeString()} Error: \"Nick\" field cannot be empty\n";
+
+            }
+            else
+            {
+                ChatMessage chatMessage = new()
+                {
+                    Author = authorTextBox.Text,
+                    Text = messageTextBox.Text,
+                    Moment = DateTime.Now
+                };
+                SendMessage(chatMessage);
+            }
+        }
+
+        private void SendMessage(ChatMessage chatMessage)
+        {
+            IPEndPoint endpoint;  // копия - как у сервера
+            try
+            {
+                IPAddress ip =               // На окне IP - это текст ("127.0.0.1")
+                    IPAddress.Parse(         // Для его перевода в число используется
+                        serverIp.Text);      // IPAddress.Parse
+                int port =                   // Аналогично - порт
+                    Convert.ToInt32(         // парсим число из текста
+                        serverPort.Text);    // 
+                endpoint =                   // endpoint - комбинация IP и порта
+                    new(ip, port);           // 
+            }
+            catch
             {
                 MessageBox.Show("Check server network parameters");
                 return;
-            }                                                                                             
-                                                                                                        // создаем сокет подключения
-            Socket clientSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp); // адресация IPv4         
-            byte[] buffer = new byte[1024];
-            //StringBuilder sb = new();
-            MemoryStream ms = new();
-
-            try                                                                                         // Двусторонний сокет (и читать, и писать)
-            {                                                                                           // Протокол сокета - ТСР
+            }
+            Socket clientSocket = new(        // создаем сокет подключения
+                AddressFamily.InterNetwork,   // адресация IPv4
+                SocketType.Stream,            // Двусторонний сокет (и читать, и писать)
+                ProtocolType.Tcp);            // Протокол сокета - ТСР
+            try
+            {
                 clientSocket.Connect(endpoint);
-                clientSocket.Send( Encoding.UTF8.GetBytes( messageTextBox.Text));
-
-                do
+                // --------------------- соединение установлено ----------------------
+                // сервер начинает с приема данных, поэтому клиент начинает с посылки
+                // формируем объект-запрос
+                ClientRequest request = new()
                 {
-                    //int n = clientSocket.Receive(buffer);
-                    //sb.Append(System.Text.Encoding.UTF8.GetString(buffer, 0, n));
-                    int n = clientSocket.Receive(buffer);
-                    ms.Write(buffer, 0, n);
-                } while (clientSocket.Available > 0);
-                //String str = sb.ToString();
-                //Dispatcher.Invoke(() =>
-                //chatLogs.Text += str + "\n");
-                String str = Encoding.UTF8.GetString(ms.ToArray());
+                    Action = "Message",
+                    Author = chatMessage.Author,
+                    Text = chatMessage.Text,
+                    Moment = chatMessage.Moment
+                };
+                // преобразуем объект в JSON
+                String json = JsonSerializer.Serialize(request, new JsonSerializerOptions() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+                // отправляем на сервер
+                clientSocket.Send(Encoding.UTF8.GetBytes(json));
 
-                chatLogs.Text += str + "\n";
+                chatLogs.Text += $"{request.Moment.ToShortTimeString()} {request.Author}: {request.Text}\n";
+
+                // после приема сервер отправляет подтверждение, клиент - получает
+                MemoryStream stream = new();               // Другой способ получения
+                do                                         // данных - собирать части
+                {                                          // бинарного потока в 
+                    int n = clientSocket.Receive(buffer);  // память.
+                    stream.Write(buffer, 0, n);            // Затем создать строку
+                } while (clientSocket.Available > 0);      // один раз пройдя
+                String str = Encoding.UTF8.GetString(      // все полученные байты.
+                    stream.ToArray());                     // 
+
+                //chatLogs.Text += str + "\n";
 
                 clientSocket.Shutdown(SocketShutdown.Both);
                 clientSocket.Dispose();
@@ -74,7 +120,6 @@ namespace Client
             {
                 chatLogs.Text += ex.Message + "\n";
             }
-
         }
     }
 }

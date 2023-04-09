@@ -14,11 +14,11 @@
             <TextBox x:Name="serverPort" Text="8090"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal">
-            
+            <Label x:Name="userNick" Content="Nick:"/>
+            <TextBox x:Name="authorTextBox" Text="User1"/>
             <Label x:Name="serverStatus" Content="Message:"/>
             <TextBox x:Name="messageTextBox" Text="Hello!"/>
             <Button Content="Send" x:Name="SendButton" Click="SendButton_Click"/>
-            
         </StackPanel>
         <Label Content="Chat Logs:"></Label>  
         <TextBlock x:Name="chatLogs"  TextWrapping="Wrap"/>
