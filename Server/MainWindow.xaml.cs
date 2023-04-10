@@ -15,6 +15,8 @@ using System.Windows.Shapes;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Text.Json;
+using Server.Classes;
 
 namespace Server
 {
@@ -24,9 +26,11 @@ namespace Server
     public partial class MainWindow : Window
     {
         private Socket? listenSocket;  //  Слушающий сокет -- постоянно активен пока сервер вкл
+        private List<ChatMessage> messages;
         public MainWindow()
         {
             InitializeComponent();
+            messages = new();
         }
         IPEndPoint? endpoint;
         private void StartServer_Click(object sender, RoutedEventArgs e)
@@ -80,10 +84,32 @@ namespace Server
                         sb.Append(System.Text.Encoding.UTF8.GetString(buffer, 0, n));
                     } while (socket.Available > 0);
                     String str = sb.ToString();
-                    Dispatcher.Invoke(() =>
-                    serverLogs.Text += str + "\n");
+                    //Dispatcher.Invoke(() =>
+                    //serverLogs.Text += str + "\n");
 
-                    str = "Received at " + DateTime.Now;
+                    var request = JsonSerializer.Deserialize<ClientRequest>(str);
+                    ServerResponse response = new();
+                    switch (request?.Action)
+                    {
+                        case "Message":
+                            ChatMessage message = new()
+                            {
+                                Author = request.Author,
+                                Text = request.Text,
+                                Moment = request.Moment
+                            };
+                            messages.Add(message);
+                            response.Status = "OK";
+                            response.Messages = new() { message };
+                            Dispatcher.Invoke(() => serverLogs.Text += $"{request.Moment.ToShortTimeString()} {request.Author}: {request.Text}\n");
+                            break;
+
+                        default:
+                            response.Status = "Error";
+                            break;
+                    }
+
+                    str = JsonSerializer.Serialize(response, new JsonSerializerOptions() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
 
                     socket.Send(Encoding.UTF8.GetBytes(str));
                     socket.Shutdown(SocketShutdown.Both);
