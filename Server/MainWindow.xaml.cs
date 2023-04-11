@@ -32,6 +32,12 @@ namespace Server
             InitializeComponent();
             messages = new();
         }
+        
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            StartServer_Click(sender, e);
+        }
+
         IPEndPoint? endpoint;
         private void StartServer_Click(object sender, RoutedEventArgs e)
         {
@@ -103,7 +109,20 @@ namespace Server
                             response.Messages = new() { message };
                             Dispatcher.Invoke(() => serverLogs.Text += $"{request.Moment.ToShortTimeString()} {request.Author}: {request.Text}\n");
                             break;
+                        case "Get":
+                            String Author = request.Author;
+                            DateTime lastSyncMoment = request.Moment;
+                            response.Messages = new();
+                            foreach (var m in messages)
+                            {
+                                if (!m.Author.Equals(Author) && m.Moment > lastSyncMoment)
+                                {
+                                    response.Messages.Add(m);
+                                }
+                            }
+                            response.Status = "OK";
 
+                            break;
                         default:
                             response.Status = "Error";
                             break;
@@ -152,5 +171,7 @@ namespace Server
                 }
             }
         }
+
+
     }
 }
