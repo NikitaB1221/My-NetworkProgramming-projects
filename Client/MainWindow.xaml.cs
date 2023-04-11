@@ -26,41 +26,25 @@ namespace Client
     public partial class MainWindow : Window
     {
         private byte[] buffer = new byte[1024];
+        private IPEndPoint? endpoint;
+        private DateTime lastSyncMoment;
+        private Random random;
 
         public MainWindow()
         {
             InitializeComponent();
+            lastSyncMoment = DateTime.MinValue;
+            random = new();
+        }
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            authorTextBox.Text = "User " + random.Next(1, 100);
+            ReCheckMessages();
         }
 
-        private void SendButton_Click(object sender, RoutedEventArgs e)
+        private IPEndPoint? InitEndpoint()
         {
-            if (messageTextBox.Text == string.Empty)
-            {
-                MessageBox.Show("\"Message\" field cannot be empty");
-                chatLogs.Text +=$"{DateTime.Now.ToShortTimeString()} Error: \"Message\" field cannot be empty\n";
-
-            }
-            else if (authorTextBox.Text == string.Empty)
-            {
-                MessageBox.Show("\"Nick\" field cannot be empty");
-                chatLogs.Text += $"{DateTime.Now.ToShortTimeString()} Error: \"Nick\" field cannot be empty\n";
-
-            }
-            else
-            {
-                ChatMessage chatMessage = new()
-                {
-                    Author = authorTextBox.Text,
-                    Text = messageTextBox.Text,
-                    Moment = DateTime.Now
-                };
-                SendMessage(chatMessage);
-            }
-        }
-
-        private void SendMessage(ChatMessage chatMessage)
-        {
-            IPEndPoint endpoint;  // копия - как у сервера
+            if (endpoint is not null) return endpoint;
             try
             {
                 IPAddress ip =               // На окне IP - это текст ("127.0.0.1")
@@ -71,12 +55,32 @@ namespace Client
                         serverPort.Text);    // 
                 endpoint =                   // endpoint - комбинация IP и порта
                     new(ip, port);           // 
+                return endpoint;
             }
             catch
             {
                 MessageBox.Show("Check server network parameters");
-                return;
+                return null;
             }
+        }
+
+        private void SendButton_Click(object sender, RoutedEventArgs e)
+        {
+            if ((endpoint = InitEndpoint()) is null) return;
+
+            ChatMessage chatMessage = new()
+            {
+                Author = authorTextBox.Text,
+                Text = messageTextBox.Text,
+                Moment = DateTime.Now
+            };
+            SendMessage(chatMessage);
+        }
+
+        private void SendMessage(ChatMessage chatMessage)
+        {
+            if ((endpoint = InitEndpoint()) is null) return;
+
             Socket clientSocket = new(        // создаем сокет подключения
                 AddressFamily.InterNetwork,   // адресация IPv4
                 SocketType.Stream,            // Двусторонний сокет (и читать, и писать)
@@ -94,24 +98,39 @@ namespace Client
                     Text = chatMessage.Text,
                     Moment = chatMessage.Moment
                 };
-                // преобразуем объект в JSON
-                String json = JsonSerializer.Serialize(request, new JsonSerializerOptions() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
-                // отправляем на сервер
-                clientSocket.Send(Encoding.UTF8.GetBytes(json));
 
-                chatLogs.Text += $"{request.Moment.ToShortTimeString()} {request.Author}: {request.Text}\n";
+                SendRequest(clientSocket, request);
+                var response = GetServerResponse(clientSocket);
 
-                // после приема сервер отправляет подтверждение, клиент - получает
-                MemoryStream stream = new();               // Другой способ получения
-                do                                         // данных - собирать части
-                {                                          // бинарного потока в 
-                    int n = clientSocket.Receive(buffer);  // память.
-                    stream.Write(buffer, 0, n);            // Затем создать строку
-                } while (clientSocket.Available > 0);      // один раз пройдя
-                String str = Encoding.UTF8.GetString(      // все полученные байты.
-                    stream.ToArray());                     // 
+                if (response is not null && response.Messages is not null)
+                {
+                    var message = response.Messages[0];
+                    // chatLogs.Text += $"{message.Moment.ToShortTimeString()} {message.Author}: {message.Text}\n";
 
-                //chatLogs.Text += str + "\n";
+                    String moment;
+                    if (message.Moment.Date != DateTime.Now.Date)
+                    {
+                        moment = message.Moment.Date.ToString() + message.Moment.ToShortTimeString();
+                    }
+                    else
+                    {
+                        moment = message.Moment.ToShortTimeString();
+                    }
+                    TextBlock messageLabel = new()
+                    {
+                        Text = moment + ": " + message.Text,
+                        Background = Brushes.LightGray,
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(10, 5, 10, 5),
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                    };
+                    chatContainer.Children.Add(messageLabel);
+                    // Задание: свои сообщения выравнивать по правому краю, чужие - по левому
+                }
+                else
+                {
+                    chatLogs.Text += "Ошибка доставки сообщения";
+                }
 
                 clientSocket.Shutdown(SocketShutdown.Both);
                 clientSocket.Dispose();
@@ -121,5 +140,92 @@ namespace Client
                 chatLogs.Text += ex.Message + "\n";
             }
         }
+
+        private async void ReCheckMessages()
+        {
+            // Проверить есть ли новые сообщения
+            if ((endpoint = InitEndpoint()) is null) return;
+
+            // новый запрос начинается с нового соединения
+            Socket clientSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            try
+            {
+                clientSocket.Connect(endpoint);
+                ClientRequest request = new()
+                {
+                    Action = "Get",
+                    Author = authorTextBox.Text,
+                    Moment = lastSyncMoment   // момент последней сверки сообщений
+                };
+                lastSyncMoment = DateTime.Now;   // обновляем момент последней сверки сообщений
+
+                SendRequest(clientSocket, request);
+
+                var response = GetServerResponse(clientSocket);
+
+                if (response is not null && response.Messages is not null)
+                {
+                    foreach (var message in response.Messages)
+                    {
+                        // chatLogs.Text += $"{message.Moment.ToShortTimeString()} {message.Author}: {message.Text}\n";
+                        String moment;
+                        if (message.Moment.Date != DateTime.Now.Date)
+                        {
+                            moment = message.Moment.Date.ToString() + message.Moment.ToShortTimeString();
+                        }
+                        else
+                        {
+                            moment = message.Moment.ToShortTimeString();
+                        }
+                        TextBlock messageLabel = new()
+                        {
+                            Text = moment + ": " + message.Text,
+                            Background = Brushes.LightGray,
+                            TextWrapping = TextWrapping.Wrap,
+                            Margin = new Thickness(10, 5, 10, 5),
+                            HorizontalAlignment = HorizontalAlignment.Left,
+                        };
+                        chatContainer.Children.Add(messageLabel);
+                    }
+                }
+                clientSocket.Shutdown(SocketShutdown.Both);
+                clientSocket.Dispose();
+
+                // цикл - отложенный перезапуск
+                await Task.Delay(1000);
+                ReCheckMessages();
+            }
+            catch (Exception ex)
+            {
+                chatLogs.Text += ex.Message + "\n";
+            }
+        }
+
+        private void SendRequest(Socket clientSocket, ClientRequest request)
+        {
+            // преобразуем объект в JSON
+            String json = JsonSerializer.Serialize(request,
+                new JsonSerializerOptions()
+                {
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                });
+            // отправляем на сервер
+            clientSocket.Send(Encoding.UTF8.GetBytes(json));
+        }
+
+        private ServerResponse? GetServerResponse(Socket clientSocket)
+        {
+            MemoryStream stream = new();               // Другой способ получения
+            do                                         // данных - собирать части
+            {                                          // бинарного потока в 
+                int n = clientSocket.Receive(buffer);  // память.
+                stream.Write(buffer, 0, n);            // Затем создать строку
+            } while (clientSocket.Available > 0);      // один раз пройдя
+                                                       // все полученные байты.
+            String str = Encoding.UTF8.GetString(stream.ToArray());
+            // Декодируем его из JSON
+            return JsonSerializer.Deserialize<ServerResponse>(str);
+        }
+
     }
 }
