@@ -60,7 +60,6 @@ namespace Http
         private async void printResponse(HttpResponseMessage response)
         {
             resultTextBlock.Text = $"HTTP/{response.Version} {(int)response.StatusCode} {response.ReasonPhrase}\n";
-
             foreach (var header in response.Headers)
             {   // var - KeyValuePair<string,IEnumerable<string>>
                 String headerString = header.Key + ": ";
@@ -86,6 +85,16 @@ namespace Http
         }
 
         private async void get5Button_Click(object sender, RoutedEventArgs e)
+        {
+            var response = await httpClient.SendAsync(
+                new HttpRequestMessage(
+                    HttpMethod.Get,
+                    url5TextBox.Text));
+
+            printResponse(response);
+        }
+
+        private async void get6Button_Click(object sender, RoutedEventArgs e)
         {
             var response = await httpClient.SendAsync(
                 new HttpRequestMessage(

@@ -34,6 +34,10 @@
                 <TextBox x:Name="url5TextBox" Text="https://www.random.org/passwords/?num=5&amp;len=8&amp;format=html&amp;rnd=new"/>
                 <Button x:Name="get5Button" Content="GET" Click="get5Button_Click"/>
             </StackPanel>
+            <StackPanel Orientation="Vertical" Margin="20 10">
+                <TextBox x:Name="url6TextBox" Text="https://www.random.org/passwords/?num=5&amp;len=8&amp;format=html&amp;rnd=new"/>
+                <Button x:Name="get6Button" Content="GET" Click="get6Button_Click"/>
+            </StackPanel>
         </StackPanel>
 
         <Grid Grid.Column="1">
