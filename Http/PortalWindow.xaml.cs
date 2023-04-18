@@ -55,5 +55,10 @@ namespace Http
         {
             new ApiWindow().Show();
         }
+
+        private void APIRequest2_Click(object sender, RoutedEventArgs e)
+        {
+            new CoinCapWindow().Show();
+        }
     }
 }

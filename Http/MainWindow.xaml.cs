@@ -74,6 +74,11 @@ namespace Http
             resultTextBlock.Text += "\n------------------------------------\n";
         }
 
+        private async void searchResponse(HttpResponseMessage response)
+        {
+            // Дз за 11.04
+        }
+
         private async void options4Button_Click(object sender, RoutedEventArgs e)
         {
             var response = await httpClient.SendAsync(
@@ -101,7 +106,7 @@ namespace Http
                     HttpMethod.Get,
                     url5TextBox.Text));
 
-            printResponse(response);
+            searchResponse(response);
         }
     }
 }
