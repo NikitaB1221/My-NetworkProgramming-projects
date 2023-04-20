@@ -60,5 +60,10 @@ namespace Http
         {
             new CoinCapWindow().Show();
         }
+
+        private void SmtpButton_Click(object sender, RoutedEventArgs e)
+        {
+            new SmtpWindow().Show();
+        }
     }
 }

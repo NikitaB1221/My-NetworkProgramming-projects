@@ -16,6 +16,9 @@
     <Compile Update="PortalWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="SmtpWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Page Update="ApiWindow.xaml">
@@ -28,6 +31,9 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Update="PortalWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="SmtpWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>

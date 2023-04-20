@@ -17,8 +17,10 @@
                 FontSize="18" Margin="10 10 30 10" Click="HttpRequest_Click"/>
         <Button x:Name="APIRequest" Content="4. Запросы API"
                 FontSize="18" Margin="10 10 30 10" Click="APIRequest_Click"/>
-<Button x:Name="APIRequest2" Content="5. Запросы API-2"
+        <Button x:Name="APIRequest2" Content="5. Запросы API-2"
                 FontSize="18" Margin="10 10 30 10" Click="APIRequest2_Click"/>
+    <Button x:Name="SmtpButton" Content="6. SMTP E-Mail"
+                    FontSize="18" Margin="10 10 30 10" Click="SmtpButton_Click"/>
 
     </StackPanel>
 </Window>
