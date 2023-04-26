@@ -7,43 +7,76 @@
         mc:Ignorable="d"
         Loaded="Window_Loaded"
         Title="SmtpWindow" Height="450" Width="350">
-    <Grid>
-        <StackPanel Orientation="Vertical">
-            <Button Content="Send Test Message"
+
+    <StackPanel Orientation="Vertical">
+        <Button Content="Send Test Message"
                     Margin="20 10"
                     x:Name="SendTestButton" 
                     Click="SendTestButton_Click"/>
 
-            <Button Content="Send Test Message"
+        <Button Content="Send Test Message"
                     Margin="20 10"
                     x:Name="SendHtmlButton" 
                     Click="SendHtmlButton_Click"/>
 
-            <StackPanel Margin="20 10" Orientation="Horizontal">
-                <StackPanel Orientation="Vertical">
-                    <StackPanel Margin="0 20 0 0" Orientation="Horizontal">
-                        <Label Content="Email: " Width="60" HorizontalAlignment="Right"/>
-                        <TextBox x:Name="MailadressTextBox" Height="24" MinWidth="150"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <Label Content="Message: " Width="60" HorizontalAlignment="Right"/>
-                        <TextBox  x:Name="MessageTextBox" Height="44" MinWidth="150" Margin="0 0" FontSize="12"/>
-                    </StackPanel>
+        <StackPanel Margin="20 10" Orientation="Horizontal">
+            <StackPanel Orientation="Vertical">
+                <StackPanel Margin="0 20 0 0" Orientation="Horizontal">
+                    <Label Content="Email: " Width="60" HorizontalAlignment="Right"/>
+                    <TextBox x:Name="MailadressTextBox" Height="24" MinWidth="150"/>
                 </StackPanel>
-                <Button Content="Send"
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Message: " Width="60" HorizontalAlignment="Right"/>
+                    <TextBox  x:Name="MessageTextBox" Height="44" MinWidth="150" Margin="0 0" FontSize="12"/>
+                </StackPanel>
+            </StackPanel>
+            <Button Content="Send"
                         Margin="10 20 0 0"
                         x:Name="SendMessageButton" 
                         Click="SendMessageButton_Click"
                         FontSize="26"/>
-            </StackPanel>
+        </StackPanel>
 
-            <StackPanel Orientation="Horizontal">
-                <TextBox x:Name="SizeTextBox" Margin="20 10" MinWidth="150"/>
-                <Button Content="Send Test Message"
+        <StackPanel Orientation="Horizontal">
+            <TextBox x:Name="SizeTextBox" Margin="20 10" MinWidth="150"/>
+            <Button Content="Send Test Message"
                     Margin="20 10"
                     x:Name="SendPasswordButton" 
                     Click="SendPasswordButton_Click"/>
-            </StackPanel>
         </StackPanel>
-    </Grid>
+
+        <Border BorderBrush="Khaki" BorderThickness="1">
+            <StackPanel Orientation="Vertical" 
+                        Margin="5">
+                <DockPanel >
+                    <Label Content="Name:" Width="45"/>
+                    <TextBox x:Name="UserNameTextbox"
+                             Text="Experienced User"/>
+                </DockPanel>
+                <DockPanel >
+                    <Label Content="Email:" Width="45"/>
+                    <TextBox x:Name="UserEmailTextbox"
+                             Text="Nikita.Bodiu@gmail.com"/>
+                </DockPanel>
+                <Button Content="Register"
+                        x:Name="RegisterButton"
+                        Click="RegisterButton_Click"
+                        Margin="20 10"/>
+
+                <DockPanel x:Name="ConfirmDockPanel"
+                           Visibility="Collapsed">
+                    <Label Content="Code from Email:" />
+                    <Button Content="Confirm" 
+                            DockPanel.Dock="Right"
+                            Margin="5 0"
+                            x:Name="ConfirmButton"
+                            Click="ConfirmButton_Click"/>
+                    <TextBox x:Name="ConfirmTextbox"/>
+                </DockPanel>
+
+            </StackPanel>
+
+        </Border>
+
+    </StackPanel>
 </Window>

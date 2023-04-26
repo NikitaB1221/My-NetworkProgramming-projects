@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Http.Data;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
@@ -24,9 +26,13 @@ namespace Http
     {
         Random _random = new Random();
         private dynamic? emailConfig;
+        private readonly DataContext _dataContext;
+        private static NpUser _user;
+
         public SmtpWindow()
         {
             InitializeComponent();
+            _dataContext = new();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -52,6 +58,17 @@ namespace Http
             {
                 MessageBox.Show($"{ex.Message}");
                 this.Close();
+            }
+            if (_user != null)
+            {
+                if (_user.ConfirmCode == null)
+                {
+                    MessageBox.Show("Confirmed!");
+                }
+                else
+                {
+                    MessageBox.Show("Not Confirmed!");
+                }
             }
         }
 
@@ -190,6 +207,7 @@ namespace Http
 
         private String GetPassword(int N)
         {
+            if(N == 0) return String.Empty;
             try
             {
                 String pass = "";
@@ -217,8 +235,60 @@ namespace Http
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
-                return null!;
+                return String.Empty;
             }
+        }
+
+
+        private void RegisterButton_Click(object sender, RoutedEventArgs e)
+        {
+            // заполняем шаблон письма данными
+            String emailPattern = System.IO.File.ReadAllText("email.html");
+            String confirmCode = GetPassword(6);
+            String emailBody = emailPattern
+                .Replace("*name*", UserNameTextbox.Text)
+                .Replace("*code*", confirmCode);
+
+            // отправляем письмо с телом emailBody
+            using SmtpClient smtpClient = GetSmtpClient();
+            MailMessage mailMessage = new()
+            {
+                From = new MailAddress(emailConfig.GetProperty("smtp").GetProperty("gmail").GetProperty("email").GetString()),
+                Body = emailBody,
+                IsBodyHtml = true,
+                Subject = "Code For Confirm"
+            };
+            mailMessage.To.Add(new MailAddress(UserEmailTextbox.Text));
+            smtpClient.Send(mailMessage);
+
+            // вносим запись в БД
+            _dataContext.NpUsers.Add(new()
+            {
+                Id = Guid.NewGuid(),
+                Name = UserNameTextbox.Text,
+                Email = UserEmailTextbox.Text,
+                ConfirmCode = confirmCode
+            });
+            _dataContext.SaveChanges();
+
+            // отображаем поле для ввода кода
+            ConfirmDockPanel.Visibility = Visibility.Visible;
+        }
+
+        private void ConfirmButton_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var NpUser in _dataContext.NpUsers)
+            {
+                if (NpUser.Name == UserNameTextbox.Text && NpUser.Email == UserEmailTextbox.Text)
+                {
+                    if (NpUser.ConfirmCode == ConfirmTextbox.Text)
+                    {
+                        NpUser.ConfirmCode = null;
+                        _user = NpUser;
+                    }
+                }
+            }
+
         }
     }
 }

@@ -1,0 +1,15 @@
+﻿{
+  "smtp": {
+    "gmail": {
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "email": "03.111.pw@gmail.com",
+      "password": "kdlsiacaxctqbfqv",
+      "ssl": true
+    }
+  },
+
+  "dbms": {
+    "planetScale": "Server=aws.connect.psdb.cloud;Database=database1;user=080kof15xn0ped0dro0m;password=pscale_pw_RQ4pJZjzhWcqmiCNUGR5RYRVvKNoaAH8DqCdEW5Coy6;SslMode=VerifyFull;"
+  }
+}
