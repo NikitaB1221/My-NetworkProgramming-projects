@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Http.Data;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
@@ -14,6 +15,20 @@ namespace Http
     /// </summary>
     public partial class App : Application
     {
+        private static DataContext dataContext = null!;
 
+        public static DataContext DataContext
+        {
+            get
+            {
+                if (dataContext == null)
+                {
+                    dataContext = new DataContext();
+                }
+                return dataContext;
+            }
+        }
+
+        public static NpUser AuthUser { get; set; } = null!;
     }
 }

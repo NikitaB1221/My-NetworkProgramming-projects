@@ -63,6 +63,8 @@
                         Click="RegisterButton_Click"
                         Margin="20 10"/>
 
+                <Button Content="Send Image" Margin="20 10" x:Name="SendImageButton" Click="SendImageButton_Click"/>
+
                 <DockPanel x:Name="ConfirmDockPanel"
                            Visibility="Collapsed">
                     <Label Content="Code from Email:" />

@@ -32,12 +32,19 @@ namespace Http
         public SmtpWindow()
         {
             InitializeComponent();
-            _dataContext = new();
+            _dataContext = App.DataContext;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             string configFilename = "emailconfig.json";
+            if(App.AuthUser is null)
+            {
+                MessageBox.Show("Unauthorized access!");
+                this.Close();
+            }
+            UserNameTextbox.Text = App.AuthUser.Name;
+            UserEmailTextbox.Text = App.AuthUser.Email;
             try
             {
                 emailConfig = JsonSerializer.Deserialize<dynamic>(
@@ -289,6 +296,67 @@ namespace Http
                 }
             }
 
+        }
+
+        private void SendImageButton_Click(object sender, RoutedEventArgs e)
+        {
+            using SmtpClient smtpClient = GetSmtpClient();
+            JsonElement gmail = emailConfig.GetProperty("smtp").GetProperty("gmail");
+            String mailbox = gmail.GetProperty("email").GetString()!;
+            MailMessage mailMessage = new MailMessage()
+            {
+                From = new MailAddress(mailbox),
+                Body = "<u>Test</u> <i>message</i> from <b style='color:green'>SmtpWindow</b>",
+                IsBodyHtml = true,
+                Subject = "Test Message"
+            };
+            mailMessage.To.Add(new MailAddress($"{UserEmailTextbox.Text}"));
+
+
+
+            /* Attachment - приложение к письму
+                По традициям сетевого программирования, если посылка (пакет)
+                содержит в себе приложения (добавочный контент), то
+                в нем обязательно должно быть указано тип этого приложения
+                (ContentType)
+                Для стандартизации введен перечень типов MIME-Types
+                Обычно эти типы определяются по расширению файла-приложения
+            */
+            String filename = "NP.png";
+            if (!System.IO.File.Exists(filename))
+            {
+                MessageBox.Show($"File '{filename}' not found");
+                return;
+            }
+            String mimeType = System.IO.Path.GetExtension(filename)
+            switch
+            {
+                // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+                ".png" => "image/png",
+                ".jpg" => "image/jpeg",
+                ".jpeg" => "image/jpeg",
+                ".gif" => "image/gif",
+                ".webp" => "image/webp",
+                ".doc" => "application/msword",
+                ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ".xls" => "application/vnd.ms-excel",
+                ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                ".pdf" => "application/pdf",
+                _ => "application/octet-stream"
+            };
+
+            mailMessage.Attachments.Add(
+            new Attachment(filename, mimeType));
+
+            try
+            {
+                smtpClient.Send(mailMessage);
+                MessageBox.Show("Sent OK");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Sent error '{ex.Message}'");
+            }
         }
     }
 }
